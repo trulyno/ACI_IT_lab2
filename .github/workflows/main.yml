@@ -1,7 +1,4 @@
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   hello_world_job:
@@ -18,7 +15,7 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: hello
         with:
-          who-to-greet: Mona the Octocat
+          who-to-greet: trulyno
 
       # Use the output from the `hello` step
       - name: Get the output time
