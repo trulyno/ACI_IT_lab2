@@ -1,0 +1,63 @@
+name: trulyno/trulyno-lab
+on:
+  push:
+  workflow_dispatch:
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+jobs:
+  build_job:
+    runs-on: ubuntu-latest
+    container:
+      image: node:18
+    timeout-minutes: 60
+    env:
+      NODE_ENV: production
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        fetch-depth: 20
+        lfs: true
+    - run: echo "Installing dependencies..."
+    - run: npm install
+    - run: echo "Building the project..."
+    - run: npm run build
+    - uses: actions/upload-artifact@v4.1.0
+      if: success()
+      with:
+        name: "${{ github.job }}"
+        retention-days: 1
+        path: dist/
+  test_job:
+    needs: build_job
+    runs-on: ubuntu-latest
+    container:
+      image: node:18
+    if: (github.ref == 'refs/heads/main' || github.event_type == 'pull_request')
+    timeout-minutes: 60
+    env:
+      NODE_ENV: production
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        fetch-depth: 20
+        lfs: true
+    - uses: actions/download-artifact@v4.1.0
+    - run: echo "Running tests..."
+    - run: npm test
+  deploy_job:
+    needs: test_job
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 60
+    env:
+      NODE_ENV: production
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        fetch-depth: 20
+        lfs: true
+    - uses: actions/download-artifact@v4.1.0
+    - run: echo "Deploying to production..."
